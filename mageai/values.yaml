@@ -1,0 +1,343 @@
+## @section Image parameters
+##Global docker image parameters
+## Please, note that this will override the image parameters, including dependencies
+##Current available Docker image parameters: repository, pullPolicy, tag
+##
+
+##@param image.repository Global docker image registry
+##@param image.pullPolicy Global docker image pull policy strategy
+##@param image.tag Global Docker image registry tag
+##
+
+image:
+  repository: mageai/mageai
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+##@param team name of the team responsable for the deployment this will set af a label in all resources
+##
+team: "myteam"
+
+##param imagePullSecrets Global Docker registry secret names as an array
+##
+imagePullSecrets: []
+##param nameOverride override deploy name to use in some resources
+##
+nameOverride: "mage"
+##param fullnameOverride override deploy name to use in some resources and labels
+##
+fullnameOverride: "mage-ai"
+##param proyectFolder path inside the containers where the mage proyect will be initialized
+##
+proyectFolder: "/home/src/mage_project"
+
+## Configure Pods Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+## @param podSecurityContext set security groups for mage pods
+##
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+## Configure Container Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+## @param containerSecurityContext. mage containers' Security Context
+##
+containerSecurityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+## Configure containers envirmoent variables
+## ref: https://docs.mage.ai/development/environment-variables
+## @param env  List of enviroment variables for mage
+## For default you find the minimum values necesary for mage to run
+env:
+  - name: USER_CODE_PATH
+    value: "/home/src/mage_project"
+  - name: SERVER_VERBOSITY
+    value: "INFO"
+  - name: ENV
+    value: "dev"
+
+## @section Service Account parameters
+##Current available Service Account  parameters: create, annotations, name
+## @param seviceAccount.create Specifies whether a service account should be created
+## @param seviceAccount.annotations Annotations to add to the service account
+## @param seviceAccount.name The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+##
+serviceAccount:
+  create: false
+  annotations: {}
+  name: "mage"
+
+
+## @section Role parameters
+## Current available Role parameters: create, name, namebind
+## @param role.create Specifies whether a role and rolebind should be created
+## @param role.name The name of the role to be created
+## @param role.namebind The name of the rolebind to be created. 
+##
+role:
+  create: true
+  name: job-manager
+  namebind: job-manager
+
+
+## @section Scheduler parameters
+##
+scheduler:
+
+  ## @param scheduler.enable This sets if mage will run scheduller and web_server in separete pods
+  ##
+  enable: false
+
+  ## @param scheduler.nodeSelector Node labels for scheduler pod
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+  ## @param scheduler.tolerations Tolerations for scheduler pod
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+  ## @param scheduler.affinity Affinity for scheduler pod
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ##
+  affinity: {}
+  ## @param scheduler.podAnnotations Annotations for scheduler pod
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+
+  ## Scheduler resource requests and limits
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param scheduler.resources.limits.cpu The cpu limits for the Mage Scheduler
+  ## @param scheduler.resources.limits.memory The memory limits for the Mage Scheduler
+  ## @param scheduler.resources.request.cpu The cpu requested for the Mage Scheduler
+  ## @param scheduler.resources.request.memory The memory requested for the Mage Scheduler
+  ##
+  resources:
+    limits:
+      cpu: 500m
+      memory: 3G
+    requests:
+      cpu: 500mm
+      memory: 3G
+
+  ## @params scheduler.redis.url The Url for the redis for Mage to use.
+  ## Note: This is requested if you run multiple instances of the scheduler
+  ## Consider that running without a scheduler will run the web server and scheduler in the same container and 
+  ## will need redis to have multiple instances
+  ## ref: https://docs.mage.ai/production/deploying-to-cloud/architecture
+  ## 
+  redis:
+    url: "redis://host:port"
+
+  ## Scheduler Autoescaling
+  ## @param scheduler.autoescaling.enabled Specifies whether a hpa for the scheduler should be creater
+  ## @param scheduler.autoescaling.minReplicas Minimum replicas for the pod autoscaling
+  ## @param scheduler.autoescaling.maxReplicas Maximum replicas for the pod autoscaling
+  ## @param scheduler.autoescaling.targetCPUUtilizationPercentage Percentage of CPU to consider when autoscaling
+  ## @param scheduler.autoescaling.targetMemoryUtilizationPercentage Percentage of Memory to consider when autoscaling
+  ##
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+## @section Web Server parameters
+##
+web:
+  ## @param web.nodeSelector Node labels for web_server pod
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+  ## @param web.tolerations Tolerations for web_server pod
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+  ## @param web.affinity Affinity for web_server pod
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ##
+  affinity: {}
+  ## @param scheduler.podAnnotations Annotations for web_server pod
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+
+
+  ## Web Server resource requests and limits
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param web.resources.limits.cpu The cpu limits for the Mage Web Server
+  ## @param web.resources.limits.memory The memory limits for the Mage Web Server
+  ## @param web.resources.request.cpu The cpu requested for the Mage Web Server
+  ## @param web.resources.request.memory The memory requested for the Mage Web Server
+  ##
+  resources:
+    limits:
+      cpu: 500m
+      memory: 3G
+    requests:
+      cpu: 500m
+      memory: 3G
+
+
+  ## Web Server Autoescaling
+  ## @param web.autoescaling.enabled Specifies whether a hpa for the web server should be creater
+  ## @param web.autoescaling.minReplicas Minimum replicas for the pod autoscaling
+  ## @param web.autoescaling.maxReplicas Maximum replicas for the pod autoscaling
+  ## @param web.autoescaling.targetCPUUtilizationPercentage Percentage of CPU to consider when autoscaling
+  ## @param web.autoescaling.targetMemoryUtilizationPercentage Percentage of Memory to consider when autoscaling
+  ##Note: If you are running MAge in one container you should specify a redis for mage to be able to sclae
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  ## @param web.replicaCount Set the number of replicas required by the deployments
+  ## Read autoscaling section
+  ##
+  replicaCount: 1
+
+  ## @param web.service.type Service type to use for the web server service
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  ## @param web.service.port Service port to expose
+  ##
+  service:
+    type: ""
+    port: 6789
+
+  ## @param web.ingress.enable Specifies whether a ingress should be created
+  ## @param web.ingress.className Ingres Class to use for the ingress
+  ## @param web.ingress.annotations specifc annotations to add to the ingress
+  ## @param web.ingress.hosts a List of host for the ingress
+  ## @param web.ingress.tls Tls to set for the ingress
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+  ##
+  ingress:
+    enabled: false
+    className: " "
+    annotations: {}
+    hosts: []
+    tls: {}
+
+
+## @section PVC
+## @param persistentVolumeClaim.enable  Specifies whether a pvc should be created
+## @param persistentVolumeClaim.claimName The name for the claim volume
+## @param persistentVolumeClaim.storage The storage for the claim
+## @param persistentVolumeClaim.class PVC storage class
+## @param persistentVolumeClaim.class PVC access mode List
+##
+persistentVolumeClaim:
+  enable: true
+  claimName: "mage-pvc"
+  storage: "5Gi"
+  class: "efs"
+  accessMode: []
+
+
+## @section configMAp
+##
+configMap:
+
+  ## @param configMap.enable Specifies whether a Configmap should be created
+  ##
+  enable: true
+  ## @param configMap.name Specifies Configmap name
+  ##
+  name: "mage-config"
+  ## @param configMap.retention_period Specifies retention period for variables in mage
+  ## ref: https://docs.mage.ai/design/data-pipeline-management#variable-retention
+  ##
+  retention_period: "2d"
+
+  ## @section Notifications 
+  ## ref: https://docs.mage.ai/production/observability/alerting-slack
+  ## ref: https://docs.mage.ai/production/observability/alerting-teams
+  ## ref: https://docs.mage.ai/production/observability/alerting-email
+  ##
+  notifications:
+    enable: false
+    teams_webhook: " "
+    slack_webhook: " "
+    smtp:
+      host: ""
+      origin: ""
+      user: ""
+      password: ""
+      destinations: {}
+    alert_on:
+      []
+      # - trigger_success
+      # - trigger_failure
+      # - trigger_passed_sla
+    message_templates:
+      failure:
+        details: ""
+      success:
+        details: ""
+      sla:
+        details: ""
+
+  ## @section K8s Executors configuration
+  ##
+  workers:
+    ## @param confiMap.workers.log.type Should be s3, gcs or null 
+    ## @param configMap.workers.log.bucket If you set other than null you need to define the bucket destination
+    ## @param configMap.workers.log.prefix Prefix inside the bucket to save the logs
+    ## @param configMap.workers.log.path Used for gcs to define gcs credential path
+    ## @param configMap.workers.log.level Set the Log level to save from the executors ("INFO" | "WARNING"  | "ERROR")
+    ## @param configMap.workers.log.retention_period Retention Period for the logs
+    ## @param configMap.workers.log.optionals List of optional configurations for s3
+    ## ref: https://docs.mage.ai/production/observability/logging#s3
+    log:
+      type: "null" # s3 | gcs
+      bucket: "bucket-name"
+      prefix: "prefix"
+      path: ""
+      level: "INFO" #WARNING  | ERROR
+      retention_period: "15d"
+      optionals: []
+    
+    ## Executors resource requests and limits
+    ## @param configMap.workers.k8s_executor_config.resource_limits.cpu The cpu limits for the K8s Executor
+    ## @param configMap.workers.k8s_executor_config.resource_limits.memory The memory limits for the K8s Executor
+    ## @param configMap.workers.k8s_executor_config.resource_requests.cpu The cpu requested for the K8s Executor
+    ## @param configMap.workers.k8s_executor_config.resource_requests.memory The memory requested for the K8s Executor
+    ## @param configMap.workers.k8s_executor_config.prefix Prefix used for the job name  in this format mage-{job_name_prefix}-block-{block_run_id}
+    ##
+    k8s_executor_config:
+      resource_limits:
+        cpu: "1000m"
+        memory: "2048Mi"
+      resource_requests:
+        cpu: "500m"
+        memory: "1024Mi"
+      prefix: "data-prep"
+
+    ## @param configMap.workers.concurrency Max concurrency jobs runs
+    ##
+    concurrency: 20
+
+  ## @section Block retry config
+  ## ref: https://docs.mage.ai/orchestration/pipeline-runs/retrying-block-runs#automatic-retry
+  ##
+  retry_config:
+    retries: 2
+    delay: 60
+    max_delay: 180
+    exponential: true
+
+  ## @param configmap.io_config Key-Value pair of credentianls to set the default profile
+  ## ref: https://github.com/mage-ai/mage-ai/blob/master/mage_ai/data_preparation/templates/repo/io_config.yaml
+  ##
+  io_config: {}

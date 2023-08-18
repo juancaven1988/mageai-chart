@@ -1,0 +1,81 @@
+{{- if .Values.configMap.enable -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name:  {{ .Values.configMap.name }}
+data:
+  metadata.yaml: |
+    variables_dir: ~/.mage_data
+    # remote_variables_dir: s3://bucket/path_prefix
+
+    variables_retention_period: {{ .Values.configMap.retention_period }}
+{{- if .Values.configMap.notifications.enable }}
+    notification_config:
+      alert_on:
+{{ toYaml .Values.configMap.notifications.alert_on | nindent 8 }}
+      teams_config:
+        webhook_url: {{ .Values.configMap.notifications.teams_webhook }}
+      slack_config:
+        webhook_url: {{ .Values.configMap.notifications.slack_webhook }}
+      email_config:
+        smtp_host: {{ .Values.configMap.notifications.smtp.host }}
+        smtp_mail_from: {{ .Values.configMap.notifications.smtp.origin }}
+        smtp_user: {{ .Values.configMap.notifications.smtp.user }}
+        smtp_password: {{ .Values.configMap.notifications.smtp.password }}
+        to_emails:
+{{ toYaml .Values.configMap.notifications.smtp.destinations | nindent 10 }}
+      message_templates:
+        failure:
+          details: {{ .Values.configMap.notifications.message_templates.failure.details }}
+        success:
+          details: {{ .Values.configMap.notifications.message_templates.success.details }}
+        sla:
+          details: {{ .Values.configMap.notifications.message_templates.sla.details }}
+{{- end }}
+
+    retry_config:
+      # Number of retry times
+      retries: {{ .Values.configMap.retry_config.retries }}
+      # Initial delay before retry. If exponential_backoff is true,
+      # the delay time is multiplied by 2 for the next retry
+      delay: {{ .Values.configMap.retry_config.delay }}
+      # Maximum time between the first attempt and the last retry
+      max_delay: {{ .Values.configMap.retry_config.max_delay }}
+      # Whether to use exponential backoff retry
+      exponential_backoff: {{ .Values.configMap.retry_config.exponential }}
+
+    queue_config:
+      concurrency: {{ .Values.configMap.workers.concurrency }}
+
+
+    k8s_executor_config:
+      resource_limits:
+        cpu: {{ .Values.configMap.workers.k8s_executor_config.resource_limits.cpu }}
+        memory: {{ .Values.configMap.workers.k8s_executor_config.resource_limits.memory }}
+      resource_requests:
+        cpu: {{ .Values.configMap.workers.k8s_executor_config.resource_requests.cpu }}
+        memory: {{ .Values.configMap.workers.k8s_executor_config.resource_requests.memory }}
+      service_account_name: {{ template "mageai.serviceAccountName" . }}
+      job_name_prefix: {{ .Values.configMap.workers.k8s_executor_config.prefix }}
+
+    logging_config:
+      type: {{ .Values.configMap.workers.log.type }}
+      level: {{ .Values.configMap.workers.log.level }}
+      retention_period: {{ .Values.configMap.workers.log.retention_period }}
+      destination_config:
+        bucket: {{ .Values.configMap.workers.log.bucket }}
+        prefix: {{ .Values.configMap.workers.log.prefix }}
+{{- if eq .Values.configMap.workers.log.type "gcs" }}
+        path_to_credentials: {{ .Values.configMap.workers.log.path }}
+{{- end }}
+{{- if .Values.configMap.workers.log.optionals }}
+  {{- toYaml .Values.configMap.workers.log.optionals | nindent 6}}
+{{- end }}
+
+  io_config.yaml: |
+    version: 0.1.1
+    default:
+      # Default profile created for data IO access.
+      # Add your credentials for the source you use, and delete the rest.
+{{ toYaml .Values.configMap.io_config | nindent 6 }}
+{{- end }}

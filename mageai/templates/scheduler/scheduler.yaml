@@ -1,0 +1,85 @@
+{{- if .Values.scheduler.enable -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mageai.fullname" . }}-scheduler
+  labels:
+    {{- include "mageai.scheduler.selectorLabels" . | nindent 4 }}
+    {{- include "mageai.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "mageai.scheduler.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.scheduler.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mageai.scheduler.selectorLabels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: true
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ template "mageai.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-scheduler
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["mage", "start"] 
+          args: ["--instance-type", "scheduler", "{{ .Values.proyectFolder }}"]
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/bash","-c","cp /home/src/mage_custom/metadata.yaml $USER_CODE_PATH/metadata.yaml && cp /home/src/mage_custom/io_config.yaml $USER_CODE_PATH/io_config.yaml"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.scheduler.resources | nindent 12 }}
+          env:
+            {{- toYaml .Values.env | nindent 12 }}
+{{- if .Values.scheduler.autoscaling.enabled }}
+            - name: "REDIS_URL"
+              value: {{ .Values.scheduler.redis.url }}
+{{- end }}
+          volumeMounts:
+            - name: mage-fs
+              mountPath: /home/src
+{{- if .Values.configMap.enable }} 
+            - name: magemetadata
+              mountPath: "/home/src/mage_custom/"
+{{- end }}
+      {{- with .Values.scheduler.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.scheduler.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.scheduler.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+{{- if .Values.persistentVolumeClaim.enable }}
+        - name: mage-fs
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistentVolumeClaim.claimName }}
+{{ else }}
+        - name: mage-fs
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistentVolumeClaim.claimName }}
+{{- end }}
+{{- if .Values.configMap.enable }}
+        - name: magemetadata
+          configMap:
+            name: {{ .Values.configMap.name }}
+{{- end }}
+{{- end }}
